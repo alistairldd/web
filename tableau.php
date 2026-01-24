@@ -31,7 +31,7 @@ $data = json_decode($json, true);
 
 $Debut = isset($_GET['debut']);
 $Fin = isset($_GET['fin']);
-$Pays = isset($_GET['Pays']) ? $_GET['Pays'] : '';
+$Pays_recherche = isset($_GET['Pays']) ? $_GET['Pays'] : '';
 
 ?>
 
@@ -44,24 +44,30 @@ print ("<th> Code </th>");
 print ("<th> Drapeau </th>");
 
 $flag = false;
-$paysLen = strlen($Pays);
+$paysLen = strlen($Pays_recherche); // longueur de la chaîne recherchée
 for ($i = 0; $i < count($data); $i++) {
-    $lenData = strlen($data[$i]['country-name']);
+    $pays_indice_i = $data[$i]['country-name'];
+    $lenData = strlen($pays_indice_i); // longueur du nom du pays dans les données
     if ($Debut) {
+
+        if (str_starts_with(strtolower($pays_indice_i), strtolower($Pays_recherche))) {
+            $flag = true;
+        } 
+        
+
+    }
+
+    else if ($Fin) {
         if ($paysLen <= $lenData) {
-            $tmp = substr($data[$i]['country-name'], 0, $paysLen);
-            if ($tmp == $Pays) {
+            if (str_ends_with(strtolower($pays_indice_i), strtolower($Pays_recherche))) {
                 $flag = true;
             }
         }
     }
 
-    else if ($Fin) {
-        if ($paysLen <= $lenData) {
-            $tmp = substr($data[$i]['country-name'], $lenData-$paysLen);
-            if ($tmp == $Pays) {
-                $flag = true;
-            }
+    else if (!$Debut && !$Fin) {
+        if (strpos(strtolower($pays_indice_i), strtolower($Pays_recherche)) !== false) {
+            $flag = true;
         }
     }
 
@@ -69,62 +75,52 @@ for ($i = 0; $i < count($data); $i++) {
 }
 
 ?>
-
-
-
-
-    
     <?php 
     if ($flag) {
-        echo("<h3> Certains resultats correspondent à votre recherche : <u>" . $Pays . "</u>" . ($Debut ? " (Début)" : "") . "</h3> <br>");  
+        echo("<h3> Certains resultats correspondent à votre recherche : <u>" . $Pays_recherche . "</u>" . ($Debut ? " (Début)" : "") . ($Fin ? " (Fin)" : "" ) . " : </h3> <br>");  
         echo("Voici la liste des pays ci-dessous : <br><br><br>"); 
         
         for ($i = 0; $i < count($data); $i++) {
-            $vu = false;
-            if (!$vu &&$Debut) {
-                $tmp = substr($data[$i]['country-name'], 0, $paysLen);
-                if ($tmp == $Pays) {
-                    $vu = true;
-                    print("<tr>");
-
-                    $nomPays = $data[$i]['country-name'];
-                    $Capitale = $data[$i]['capital'];
-                    $nomCode = $data[$i]['iso2'];
-                    $Drapeau = "<img src=https://flagsapi.com/" . $nomCode . "/flat/64.png />";
-                    print("<td> " . $nomPays . " </td>");
-                    print("<td> " . $Capitale . " </td>");
-                    print("<td> &nbsp;&nbsp;" . $nomCode . " &nbsp;&nbsp;</td>");
-                    print("<td> &nbsp;" . $Drapeau . "&nbsp; </td>");
-                    print("</tr>");
-                }
-                
-            }
-            else if (!$vu && $Fin){
-                $tmp = substr($data[$i]['country-name'], $lenData-$paysLen);
-                if ($tmp == $Pays) {
-                    $vu = true;
-                    print("<tr>");
-                    
-                    $nomPays = $data[$i]['country-name'];
-                    $Capitale = $data[$i]['capital'];
-                    $nomCode = $data[$i]['iso2'];
-                    $Drapeau = "<img src=https://flagsapi.com/" . $nomCode . "/flat/64.png />";
-                    print("<td> " . $nomPays . " </td>");
-                    print("<td> " . $Capitale . " </td>");
-                    print("<td> &nbsp;&nbsp;" . $nomCode . " &nbsp;&nbsp;</td>");
-                    print("<td> &nbsp;" . $Drapeau . "&nbsp; </td>");
-                    print("</tr>");
-                
-
-                }
-            }
-
+            $pays_indice_i = $data[$i]['country-name'];
+            $match = false;
             
+            $nomBas = strtolower($pays_indice_i);
+            $rechBas = strtolower($Pays_recherche);
+
+            if ($Debut && $Fin) {
+                if (str_starts_with($nomBas, $rechBas) || str_ends_with($nomBas, $rechBas)) {
+                    $match = true;
+                }
+            } elseif ($Debut) {
+                if (str_starts_with($nomBas, $rechBas)) {
+                    $match = true;
+                }
+            } elseif ($Fin) {
+                if (str_ends_with($nomBas, $rechBas)) {
+                    $match = true;
+                }
+            } else {
+                if (str_contains($nomBas, $rechBas)) {
+                    $match = true;
+                }
+            }
+
+            if ($match) {
+                $nomCode = $data[$i]['iso2'];
+                ?>
+                <tr>
+                    <td><?php echo $pays_indice_i; ?></td>
+                    <td><?php echo $data[$i]['capital']; ?></td>
+                    <td>&nbsp;&nbsp;<?php echo $nomCode; ?>&nbsp;&nbsp;</td>
+                    <td><img src="https://flagsapi.com/<?php echo $nomCode; ?>/flat/64.png" /></td>
+                </tr>
+                <?php
+            }
         }
     }
 
     else {
-        echo("<h3> Aucun resultat ne correspond à votre recherche : <u>" . $Pays . "</u></h3> <br>");  
+        echo("<h3> Aucun resultat ne correspond à votre recherche : <u>" . $Pays_recherche . "</u></h3> <br>");  
         echo("Voici la liste des pays ci-dessous : <br><br><br>"); 
 
         for ($i = 0; $i < count($data); $i++) {
